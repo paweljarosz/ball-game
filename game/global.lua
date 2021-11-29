@@ -3,6 +3,7 @@ local M = {}
 M.level = 1
 M.max_level = 10
 M.music = true
+M.factor = 1
 
 M.unlocked = {}
 M.unlocked[1] = true

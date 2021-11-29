@@ -30,7 +30,12 @@ local function on_bug(action, node, touch)
 			gui.animate(gui.get_node("bug"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
 		elseif touch.released then
 			gui.animate(gui.get_node("bug"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
-			msg.post("@system:", "toggle_physics_debug")
+			if global.factor == 1 then
+				global.factor = 0.5
+			else
+				global.factor = 1
+			end
+			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = global.factor, mode = 1})
 		end
 	end
 end
@@ -46,7 +51,7 @@ local function on_analog(action, node, touch)
 		if touch.pressed then
 			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 0.2, mode = 1})
 		elseif touch.released then
-			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 1, mode = 1})
+			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = global.factor, mode = 1})
 			timer.delay(0.1, false, function()
 				msg.post("player", "force", {x = -touch.x, y = -touch.y})
 			end)
