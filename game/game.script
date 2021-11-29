@@ -1,0 +1,65 @@
+local FORCE = hash("force")
+local TRIGGER = hash("trigger_response")
+local STAR = hash("star")
+local KEY = hash("key")
+local KEY0 = hash("/key")
+local KEY1 = hash("/key1")
+local DANGER = hash("danger")
+
+local app_scenemanager = require("example.app.scenemanager")
+local global = require("game.global")
+
+local POWER = 50000000
+
+function init(self)
+	global.shots = global.shot_lvl[global.level]
+	print(" IA M", msg.url(), global.shots, global.level)
+	msg.post("gui#game", "shots")
+end
+
+local function open_doors_with_key(key, door)
+	particlefx.play(key.."#puff")
+	go.delete(key)
+	msg.post(door.."#col", "disbale")
+	particlefx.play(door.."#puff")
+	go.delete(door)
+end
+
+local function finish_level_success()
+	particlefx.play("#star")
+	go.delete("/goal")
+	msg.post("#col", "disable")
+	msg.post("gui#game", "finish")
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == FORCE then
+		--print("FORCER")
+		msg.post("#col", "apply_force", {
+			force = vmath.vector3(message.x * POWER, message.y * POWER, 0),
+			position = go.get_world_position()} )
+			particlefx.play("#puff")
+			msg.post("main:/main", "music", {on = global.music, sound = "puff"})
+		
+	elseif message_id == TRIGGER then
+		if message.group == STAR then
+			msg.post("main:/main", "music", {on = global.music, sound = "star"})
+			finish_level_success()
+		elseif message.group == KEY then
+			if message.other_id == KEY0 then
+				open_doors_with_key("key", "door")
+			elseif message.other_id == KEY1 then
+				open_doors_with_key("key1", "door1")
+			end
+			msg.post("main:/main", "music", {on = global.music, sound = "key"})
+		elseif message.group == DANGER then
+			print("DANGER")
+			particlefx.play("#ouch")
+			msg.post("#col", "disable")
+			msg.post("main:/main", "music", {on = global.music, sound = "death"})
+			timer.delay(0.3, false, function()
+				app_scenemanager.load_scene("level_"..global.level)
+			end)
+		end
+	end
+end

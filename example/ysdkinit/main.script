@@ -1,0 +1,22 @@
+local yagames = require("yagames.yagames")
+local table_util = require("example.ysdkdebug.table_util")
+local global = require("game.global")
+
+local function init_handler(self, err)
+    msg.post("#gui", "init_done", {err = err})
+end
+
+function init(self)
+    yagames.init(init_handler)
+
+    local options = {scopes = true, signed = true}
+
+    yagames.player_init(options, function(self, err)
+        print("yagames.player_init(" .. table_util.tostring(options) .. "):", err or "OK!")
+        if not err then
+            print("SUCCES")
+            global.player_name = yagames.player_get_name()
+            msg.post("ysdkinit:/init#gui", "name")
+        end
+    end)
+end

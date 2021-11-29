@@ -1,0 +1,62 @@
+[bootstrap]
+main_collection = /example/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 1250
+height = 1500
+high_dpi = 1
+vsync = 0
+
+[project]
+title = yagames
+version = 0.6.4
+publisher = Indiesoft LLC
+bundle_resources = example/bundle/
+dependencies#0 = https://github.com/subsoap/defos/archive/v2.5.0.zip
+dependencies#1 = https://github.com/Insality/druid/archive/0.6.0.zip
+dependencies#2 = https://github.com/britzl/ludobits/archive/7.1.0.zip
+dependencies#3 = https://github.com/britzl/defold-input/archive/4.3.0.zip
+
+[library]
+include_dirs = yagames
+
+[render]
+clear_color_alpha = 1.0
+clear_color_red = 0.93
+clear_color_green = 0.93
+clear_color_blue = 0.93
+
+[html5]
+show_fullscreen_button = 0
+show_made_with_defold = 0
+scale_mode = fit
+
+[graphics]
+max_characters = 30000
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+
+[input]
+game_binding = /builtins/input/all.input_bindingc
+
+[yagames]
+sdk_init_options = { orientation: { value: "portrait", lock: true } }
+sdk_init_snippet = console.log("Yandex Games SDK is ready!");
+service_worker_url = sw.js
+manifest_url = yandex-manifest.json
+
+[sprite]
+subpixels = 1
+
+[physics]
+scale = 0.01
+gravity_y = -800.0
+allow_dynamic_transforms = 1
+debug = 0
+
+[collection_proxy]
+max_count = 32
+

@@ -1,0 +1,10 @@
+go.property("delta_x", 0)
+go.property("delta_y", 0)
+go.property("duration", 1)
+
+function init(self)
+	local pos = go.get_world_position()
+	pos.x = pos.x + self.delta_x
+	pos.y = pos.y + self.delta_y
+	go.animate(".", "position", go.PLAYBACK_LOOP_PINGPONG, pos, go.EASING_INOUTSINE, self.duration)
+end

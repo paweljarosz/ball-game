@@ -1,0 +1,127 @@
+local app_scenemanager = require("example.app.scenemanager")
+local druid = require("druid.druid")
+local druid_style = require("example.ysdkdebug.druid_style")
+local sitelock = require("yagames.sitelock")
+local rxi_json = require("yagames.helpers.json")
+local global = require("game.global")
+local onscreen = require "in.onscreen"
+
+local function continue_handler(self)
+    app_scenemanager.load_scene("level_"..global.level)
+end
+
+local on_level = {}
+
+on_level[1] = function(action, node, touch)
+    if action == onscreen.BUTTON then
+        if touch.pressed then
+            gui.animate(gui.get_node("level1"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+        elseif touch.released then
+            gui.animate(gui.get_node("level1"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+            global.level = 1
+            app_scenemanager.load_scene("level_"..global.level)
+        end
+    end
+end
+
+local function on_sound(action, node, touch)
+    if action == onscreen.BUTTON then
+        if touch.pressed then
+            gui.animate(gui.get_node("sound"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+        elseif touch.released then
+            gui.animate(gui.get_node("sound"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+            global.music = not global.music
+            gui.play_flipbook(gui.get_node("sound_box"), global.music and "sound" or "no_sound")
+            msg.post("main:/main", "music", {on = global.music, sound = "menu"})
+        end
+    end
+end
+
+
+function init_nodes()
+    local k = 1
+    local pos = vmath.vector3(140, 900, 0)
+    for i = 1, global.max_level do
+        local tree = gui.clone_tree(gui.get_node("level"))
+        pos.x = 140
+        pos.x = pos.x + (k * 160)
+        k = k + 1
+        print("X", pos.x, "Y", pos.y)
+        gui.set_position(tree[hash("level")], pos)
+        gui.set_text(tree[hash("text")], global.unlocked[i] and i or "?")
+
+        if (i % 5 == 0) then
+            k = 1
+            pos.y = pos.y - 160
+        end
+        onscreen.register_button(tree[hash("level")], nil, function(action, node, touch)
+            if action == onscreen.BUTTON and global.unlocked[i] then
+                if touch.pressed then
+                    gui.animate(tree[hash("level")], gui.PROP_SCALE, vmath.vector4(0.45), gui.EASING_INOUTSINE, 0.5)
+                elseif touch.released then
+                    gui.animate(tree[hash("level")], gui.PROP_SCALE, vmath.vector4(0.5), gui.EASING_INOUTSINE, 0.5)
+                    global.level = i
+                    app_scenemanager.load_scene("level_"..global.level)
+                end
+            end
+        end)
+    end
+end
+
+function init(self)
+    msg.post("#", "acquire_input_focus")
+    self.druid = druid.new(self, druid_style)
+
+    self.text_status = self.druid:new_text("text_status")
+    self.text_status:set_to("Initializing...")
+
+    self.text_version = self.druid:new_text("text_version")
+    self.text_version:set_to("YAGAMES VERSION " .. sys.get_config("project.version", "0.0.0"))
+
+    self.text_sitelock = self.druid:new_text("text_sitelock")
+    self.text_sitelock:set_to("Current domain is " .. rxi_json.encode(sitelock.get_current_domain()) ..
+    ".\n" .. (sitelock.verify_domain() and "Allowed to run." or "NOT ALLOWED to run."))
+
+    msg.post("main:/main", "music", {on = false, sound = "menu"})
+    msg.post("main:/main", "music", {on = false, sound = "music"})
+    msg.post("main:/main", "music", {on = global.music, sound = "menu"})
+
+
+    onscreen.register_button(gui.get_node("sound"), nil, on_sound)
+    gui.play_flipbook(gui.get_node("sound_box"), global.music and "sound" or "no_sound")
+
+    init_nodes()
+end
+
+function final(self)
+    self.druid:final()
+    msg.post("main:/main", "music", {on = false, sound = "menu"})
+    msg.post("main:/main", "music", {on = false, sound = "music"})
+    msg.post("main:/main", "music", {on = global.music, sound = "music"})
+    onscreen.reset()
+end
+
+function update(self, dt)
+    self.druid:update(dt)
+end
+
+function on_message(self, message_id, message, sender)
+    self.druid:on_message(message_id, message, sender)
+
+    if message_id == hash("init_done") then
+        if message.err then
+            self.text_status:set_to(message.err)
+        else
+            self.text_status:set_to("READY!")
+            --self.button_continue:set_enabled(true)
+            global.initialized = true
+        end
+    elseif message_id == hash("name") then
+        gui.set_text(gui.get_node("name"), "Welcome "..global.player_name.."!")
+    end
+end
+
+function on_input(self, action_id, action)
+    onscreen.on_input(action_id, action)
+    return self.druid:on_input(action_id, action)
+end

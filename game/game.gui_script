@@ -1,0 +1,134 @@
+local onscreen = require "in.onscreen"
+local global = require("game.global")
+local app_scenemanager = require("example.app.scenemanager")
+
+local SHOTS = hash("shots")
+local FINISH = hash("finish")
+
+local function finish()
+	global.level = global.level + 1
+	if global.level > global.max_level then
+		global.level = 1
+	end
+	app_scenemanager.load_scene("level_"..global.level)
+end
+
+local function on_restart(action, node, touch)
+	if action == onscreen.BUTTON then
+		if touch.pressed then
+			gui.animate(gui.get_node("restart"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+		elseif touch.released then
+			gui.animate(gui.get_node("restart"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+			app_scenemanager.load_scene("level_"..global.level)
+		end
+	end
+end
+
+local function on_analog(action, node, touch)
+	if action == onscreen.ANALOG then
+		if touch.pressed then
+			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 0.2, mode = 1})
+		elseif touch.released then
+			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 1, mode = 1})
+			timer.delay(0.1, false, function()
+				msg.post("player", "force", {x = touch.x, y = touch.y})
+			end)
+			global.shots = global.shots - 1
+			gui.set_text(gui.get_node("shots"), global.shots)
+			if global.shots < 0 then
+				msg.post("main:/main", "music", {on = global.music, sound = "death"})
+				timer.delay(0.2, false, function()
+					app_scenemanager.load_scene("level_"..global.level)
+				end)
+			end
+		else
+			--print("moved analog")
+		end
+	elseif action == onscreen.ANALOG_UP then
+		if touch.pressed then
+			--print("analog stick is pushed up beyond specified threshold")
+		end
+	end
+end
+
+local function on_menu(action, node, touch)
+	if action == onscreen.BUTTON then
+		if touch.pressed then
+			gui.animate(gui.get_node("menu"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+		elseif touch.released then
+			gui.animate(gui.get_node("menu"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+			app_scenemanager.load_scene("ysdkinit")
+		end
+	end
+end
+
+local function on_sound(action, node, touch)
+	if action == onscreen.BUTTON then
+		if touch.pressed then
+			gui.animate(gui.get_node("sound"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+		elseif touch.released then
+			gui.animate(gui.get_node("sound"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+			global.music = not global.music
+			gui.play_flipbook(gui.get_node("sound_box"), global.music and "sound" or "no_sound")
+			msg.post("main:/main", "music", {on = global.music, sound = "music"})
+		end
+	end
+end
+
+function init(self)
+	msg.post("#", "acquire_input_focus")
+	onscreen.register_analog(gui.get_node("analog"), { radius = 120, threshold = 0.9 }, on_analog)
+	gui.set_text(gui.get_node("level"), global.level)
+	onscreen.register_button(gui.get_node("restart"), nil, on_restart)
+	onscreen.register_button(gui.get_node("menu"), nil, on_menu)
+	
+	onscreen.register_button(gui.get_node("sound"), nil, on_sound)
+	gui.play_flipbook(gui.get_node("sound_box"), global.music and "sound" or "no_sound")
+
+	self.finished = false
+	self.timer = 0
+end
+
+function update(self, dt)
+	self.timer = self.timer + dt
+end
+
+function final(self)
+	onscreen.reset()
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == SHOTS then
+		gui.set_text(gui.get_node("shots"), global.shots)
+	elseif message_id == FINISH then
+		local score = global.shot_lvl[global.level]
+		local node = gui.get_node("score_summary")
+		gui.set_text(node, string.format("Moves: %.0f", score - global.shots))
+		gui.set_scale(node, vmath.vector3(0))
+		gui.animate(node, gui.PROP_SCALE, vmath.vector3(0.7), gui.EASING_OUTBOUNCE, 1.5)
+		timer.delay(0.5, false, function()
+			node = gui.get_node("score_time")
+			gui.set_text(node, string.format("Time: %.2f", self.timer))
+			gui.set_scale(node, vmath.vector3(0))
+			score = ((score - global.shots) / score) * 500 * global.level + 200
+			gui.animate(node, gui.PROP_SCALE, vmath.vector3(0.7), gui.EASING_OUTBOUNCE, 1.5)
+			timer.delay(0.5, false, function()
+				node = gui.get_node("score")
+				score = score / self.timer
+				gui.set_text(node, string.format("%.0f", score))
+				gui.set_scale(node, vmath.vector3(0))
+				gui.animate(node, gui.PROP_SCALE, vmath.vector3(3), gui.EASING_OUTBOUNCE, 1.5)
+				self.finished = true
+			end)
+		end)
+	end
+end
+
+function on_input(self, action_id, action)
+	if self.finished and action.released then
+		finish()
+		self.finished = false
+	else
+		onscreen.on_input(action_id, action)
+	end
+end
