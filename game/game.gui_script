@@ -10,6 +10,7 @@ local function finish()
 	if global.level > global.max_level then
 		global.level = 1
 	end
+	global.unlocked[global.level] = true
 	app_scenemanager.load_scene("level_"..global.level)
 end
 
@@ -31,11 +32,11 @@ local function on_bug(action, node, touch)
 		elseif touch.released then
 			gui.animate(gui.get_node("bug"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
 			if global.factor == 1 then
-				global.factor = 0.5
+				global.factor = -1
 			else
 				global.factor = 1
 			end
-			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = global.factor, mode = 1})
+			gui.set_rotation(gui.get_node("arrow"), vmath.quat_rotation_y((global.factor == 1) and 180 or 0) )
 		end
 	end
 end
@@ -50,10 +51,11 @@ local function on_analog(action, node, touch)
 	if action == onscreen.ANALOG then
 		if touch.pressed then
 			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 0.2, mode = 1})
+			gui.play_flipbook(gui.get_node("arrow"), (global.factor == 1) and "arrow_bug" or "arrow")
 		elseif touch.released then
-			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = global.factor, mode = 1})
+			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 1, mode = 1})
 			timer.delay(0.1, false, function()
-				msg.post("player", "force", {x = -touch.x, y = -touch.y})
+				msg.post("player", "force", {x = global.factor*touch.x, y = global.factor*touch.y})
 			end)
 			global.shots = global.shots - 1
 			gui.set_text(gui.get_node("shots"), global.shots)

@@ -54,6 +54,10 @@ images {
   image: "/game/assets/bug.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
+images {
+  image: "/game/assets/arrow_bug.png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
+}
 animations {
   id: "star"
   images {
