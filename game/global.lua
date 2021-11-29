@@ -18,7 +18,7 @@ M.unlocked[10] = false
 
 M.shot_lvl = {}
 M.shot_lvl[1] = 9
-M.shot_lvl[2] = 1
+M.shot_lvl[2] = 3
 M.shot_lvl[3] = 6
 M.shot_lvl[4] = 9
 M.shot_lvl[5] = 12

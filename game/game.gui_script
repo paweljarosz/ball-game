@@ -24,6 +24,23 @@ local function on_restart(action, node, touch)
 	end
 end
 
+local function on_bug(action, node, touch)
+	if action == onscreen.BUTTON then
+		if touch.pressed then
+			gui.animate(gui.get_node("bug"), gui.PROP_SCALE, vmath.vector4(0.8), gui.EASING_INOUTSINE, 0.5)
+		elseif touch.released then
+			gui.animate(gui.get_node("bug"), gui.PROP_SCALE, vmath.vector4(1), gui.EASING_INOUTSINE, 0.5)
+			msg.post("@system:", "toggle_physics_debug")
+		end
+	end
+end
+
+local v_zero = vmath.vector3(0)
+
+local function get_angle(x1,y1) 
+	return math.atan2(0-y1, 0-x1) 
+end
+
 local function on_analog(action, node, touch)
 	if action == onscreen.ANALOG then
 		if touch.pressed then
@@ -31,7 +48,7 @@ local function on_analog(action, node, touch)
 		elseif touch.released then
 			msg.post("main:/level_"..global.level.."#collectionproxy", "set_time_step", {factor = 1, mode = 1})
 			timer.delay(0.1, false, function()
-				msg.post("player", "force", {x = touch.x, y = touch.y})
+				msg.post("player", "force", {x = -touch.x, y = -touch.y})
 			end)
 			global.shots = global.shots - 1
 			gui.set_text(gui.get_node("shots"), global.shots)
@@ -41,8 +58,12 @@ local function on_analog(action, node, touch)
 					app_scenemanager.load_scene("level_"..global.level)
 				end)
 			end
+			gui.set_scale(gui.get_node("arrow"), v_zero)
 		else
 			--print("moved analog")
+			local distance = math.sqrt(touch.x * touch.x + touch.y * touch.y)
+			gui.set_scale(gui.get_node("arrow"), vmath.vector3(distance, distance, 1))
+			gui.set_rotation(gui.get_node("arrow"), vmath.quat_rotation_z(get_angle(touch.x, touch.y)) )
 		end
 	elseif action == onscreen.ANALOG_UP then
 		if touch.pressed then
@@ -81,9 +102,12 @@ function init(self)
 	gui.set_text(gui.get_node("level"), global.level)
 	onscreen.register_button(gui.get_node("restart"), nil, on_restart)
 	onscreen.register_button(gui.get_node("menu"), nil, on_menu)
+	onscreen.register_button(gui.get_node("bug"), nil, on_bug)
 	
 	onscreen.register_button(gui.get_node("sound"), nil, on_sound)
 	gui.play_flipbook(gui.get_node("sound_box"), global.music and "sound" or "no_sound")
+
+	gui.set_scale(gui.get_node("arrow"), vmath.vector3(0))
 
 	self.finished = false
 	self.timer = 0
